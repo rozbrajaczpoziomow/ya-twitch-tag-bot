@@ -1,0 +1,19 @@
+{
+	"username": "tyrolkagdbot",
+	"token": "oauth:<...>",
+
+	"channels": [
+		"<...>"
+	],
+
+	"tagSettings": {
+		"!globalTags": {
+			"help": "https://github.com/rozbrajaczpoziomow/ya-twitch-tag-bot#readme"
+		},
+		"!default": {
+			"prefix": "&",
+			"admins": [],
+			"tags": {}
+		}
+	}
+}
