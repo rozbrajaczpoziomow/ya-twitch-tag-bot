@@ -3,7 +3,7 @@ const tmi = require('tmi.js');
 const { writeFileSync } = require('node:fs');
 
 Config.Save = function SaveConfig() {
-	console.log('[+] Saving config in the background.');
+	console.log('[+] Saving config...');
 	writeFileSync('config.json', JSON.stringify(Config, null, '\t'));
 };
 
@@ -37,10 +37,15 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 	const send = msg => Client.say(channel, msg);
 	const message = origMessage.toLowerCase();
 	const settings = Config.tagSettings[channel.slice(1)];
+	const isAdmin = username => settings.admins.includes(username); // when adding admins later make sure the added is in lowercase
 
 	if(message.startsWith(atMe)) {
 		if(message.startsWith(atMe + ' prefix set ')) {
+			if(!isAdmin(tags.username))
+				return send(`@${tags.username} It looks like you do not have permission to change the prefix. Please don't try again later.`);
+
 			settings.prefix = message.split(' ').slice(3).join(' ');
+			Config.Save();
 			return send(`@${tags.username} Prefix set to: ${settings.prefix}`);
 		} else
 			return send(`@${tags.username} Current prefix is: ${settings.prefix} (to change - @bot prefix set <new prefix>)`);
