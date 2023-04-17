@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "tmi.js": "^1.8.5"
+  },
+  "devDependencies": {
+    "eslint": "^8.38.0"
+  },
+  "name": "ya-twitch-tag-bot",
+  "version": "1.0.0",
+  "description": "Yet Another Twitch Tag Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/rozbrajaczpoziomow/ya-twitch-tag-bot"
+  },
+  "keywords": [
+    "twitch"
+  ],
+  "author": "rozbrajaczpoziomow",
+  "license": "UNLICENSED"
+}
