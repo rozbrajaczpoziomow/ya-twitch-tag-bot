@@ -93,6 +93,7 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 						return reply(`You don't own the tag called ${name}.`);
 
 					delete settings.tags[name];
+					Config.save();
 					return reply(`Tag called ${name} has been yeeted successfully.`);
 
 				case 'list':
