@@ -26,6 +26,7 @@
 		"arrow-spacing": ["error", {"before": true, "after": true}],
 		"comma-dangle": ["error", "never"],
 		"brace-style": ["error", "1tbs", {"allowSingleLine": true}],
-		"func-call-spacing": ["error", "never"]
+		"func-call-spacing": ["error", "never"],
+		"no-redeclare": ["off", "it's broken"]
 	}
 }

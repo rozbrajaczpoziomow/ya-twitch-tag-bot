@@ -22,7 +22,8 @@ if(dirty)
 
 const Client = new tmi.Client({
 	options: {
-		debug: true
+		debug: true,
+		joinInterval: 300
 	},
 	identity: {
 		username: Config.username.toLowerCase(),
@@ -32,39 +33,32 @@ const Client = new tmi.Client({
 });
 Client.connect();
 
-const atMe = `@${Config.username.toLowerCase()}`;
-
 // eslint-disable-next-line no-unused-vars
-Client.on('message', async function onMessage(channel, tags, origMessage, self) {
+Client.on('message', async function onMessage(channel, tags, message, self) {
+	'use strict';
+
 	if(tags.username === Config.username.toLowerCase())
 		return;
 
 	const reply = msg => Client.reply(channel, ' ' + msg, tags.id); // Space here to not parse twitch commands like /vip, etc..
-	const message = origMessage.toLowerCase();
+	// const message = origMessage.toLowerCase();
 	const settings = Config.tagSettings[channel.slice(1)];
 	const isAdmin = username => username === channel.slice(1) || settings.admins.includes(username); // when adding admins later make sure the added is in lowercase
 
-	if(message.startsWith(atMe)) {
-		if(message.startsWith(atMe + ' prefix set')) {
-			if(!isAdmin(tags.username))
-				return reply('It looks like you do not have permission to change the prefix. Please don\'t try again later.');
-
-			settings.prefix = message.split(' ').slice(3).join(' ');
-			Config.save();
-			return reply(`Prefix set to: ${settings.prefix}`);
-		} else
-			return reply(`Current prefix is: ${settings.prefix} (to change - @bot prefix set <new prefix>)`);
-	}
+	if(message.toLowerCase().startsWith(`@${Config.username.toLowerCase()}`))
+		// copy from switch(cmd) > case 'prefix'
+		return reply(`Current prefix: ${settings.prefix}` + (isAdmin(tags.username)? ` (change with '${settings.prefix}prefix set <new prefix>)'` : ''));
 
 	if(!message.startsWith(settings.prefix))
 		return;
 
-	let [cmd, ...args] = message.slice(settings.prefix.length).split(' ');
+	let [cmd, ...args] = message.slice(settings.prefix.length).trimStart().split(' ');
 	cmd = cmd.toLowerCase();
+	console.log(`'${cmd}'`);
 
 	switch(cmd) {
 		case 'tag':
-			var name = args[1]?.toLowerCase();
+			var name = args[1];
 			switch(args[0]?.toLowerCase()) {
 				case 'create':
 				case 'new':
@@ -120,27 +114,72 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 					if(!name)
 						return reply(`Usage: ${settings.prefix}tag <new|remove|list|info> <name> [...other arguments]`);
 
-					if(Config.tagSettings['!globalTags'][name])
-						return reply(Config.tagSettings['!globalTags'][name]);
-
-					if(!settings.tags[name])
-						return reply(`A tag called ${name} doesn't seem to exist. You can create it with '${settings.prefix}tag new ${name} <content...>'.`);
-
-					return reply(settings.tags[name].content);
+					return reply(Config.tagSettings['!globalTags'][name] ?? settings.tags[name]?.content ?? `A tag called ${name} doesn't seem to exist. You can create it with '${settings.prefix}tag new ${name} <content...>'.`);
 
 			}
 			// No break here because we always return.
+
+		case 'prefix':
+			if(args[0] == 'set')
+				if(isAdmin(tags.username)) {
+					settings.prefix = args.slice(1).join(' ');
+					Config.save();
+					return reply(`Prefix successfully changed to ${settings.prefix}`);
+				} else
+					return reply('You don\'t have permission to change the prefix.');
+			return reply(`Current prefix: ${settings.prefix}` + (isAdmin(tags.username)? ` (change with '${settings.prefix}prefix set <new prefix>)'` : ''));
+
+		case 'admin':
+			var help = `${settings.prefix}admin <add/remove/list> <username>`;
+
+			if(tags.username !== channel.slice(1) || args[0] === 'list')
+				return reply(`Admins [${settings.admins.length}]: ${settings.admins.join(', ')}`);
+
+			if(args[0] === 'add') {
+				var user = args[1]?.toLowerCase();
+
+				if(!user)
+					return reply(help);
+
+				if(user === channel.slice(1))
+					return reply('This is your channel, you rule.');
+
+				// TODO: I really should get better messages for these
+				if(settings.admins.includes(user))
+					settings.reply(`${user} already was an admin.`);
+
+				settings.admins.push(user);
+				Config.save();
+				return reply(`${user} is now an admin.`);
+			} else if(args[0] === 'remove') {
+				var user = args[1]?.toLowerCase();
+
+				if(!user)
+					return reply(help);
+
+				if(user === channel.slice(1))
+					return reply('This is your channel, you rule.');
+
+				if(!settings.admins.includes(user))
+					return reply(`${user} is not an admin.`);
+
+				delete settings.admins[user];
+				Config.save();
+				return reply(`${user} is no longer an admin.`);
+			}
+
+			return reply(help);
+
 		// other commands
 		default:
 			// There is no message if the tag doesn't exist to allow people to set the prefix to nothing.
+			var name = message.slice(settings.prefix.length).trimStart().split(' ')[0];
+			var content = Config.tagSettings['!globalTags'][name] ?? settings.tags[name]?.content;
 
-			if(Config.tagSettings['!globalTags'][cmd])
-				return reply(Config.tagSettings['!globalTags'][cmd]);
+			if(content)
+				return reply(content);
 
-			if(settings.tags[cmd])
-				return reply(settings.tags[cmd].content);
-
-			return;
+			break;
 	}
 });
 
@@ -148,3 +187,4 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 // Add so (admins/channel?) can disable users from creating tags
 // Add so channel can add/remove admins
 // Admins/channel can ban users from creating tags (admins can't ban/remove/add other admins)
+// Add a tagRequiresPrefix config property - self-explanatory - if on the default case in global switch(cmd) shall reply if no tag is found
