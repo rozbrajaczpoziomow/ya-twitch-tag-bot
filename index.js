@@ -54,7 +54,6 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 	let [cmd, ...args] = message.slice(settings.prefix.length).trimStart().split(' ');
 	cmd = cmd.toLowerCase();
-	console.log(`'${cmd}'`);
 
 	switch(cmd) {
 		case 'tag':
@@ -93,6 +92,10 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 				case 'list':
 					var channelFor = name || channel.slice(1);
+
+					if(channelFor.startsWith('!') || !Config.tagSettings[channelFor])
+						channelFor = channel.slice(1);
+
 					// This is done to prevent spam if you have a large amount of tags.
 					if(isAdmin(tags.username) || Config.username.toLowerCase() === channel.slice(1))
 						return reply(`Global tags: ${Object.keys(Config.tagSettings['!globalTags']).join(', ')} || Channel tags: ${Object.keys(Config.tagSettings[channelFor].tags).join(', ')}`);
@@ -185,6 +188,5 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 // TODO:
 // Add so (admins/channel?) can disable users from creating tags
-// Add so channel can add/remove admins
 // Admins/channel can ban users from creating tags (admins can't ban/remove/add other admins)
 // Add a tagRequiresPrefix config property - self-explanatory - if on the default case in global switch(cmd) shall reply if no tag is found
