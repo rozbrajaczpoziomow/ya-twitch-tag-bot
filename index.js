@@ -9,15 +9,16 @@ Config.save = function saveConfig() {
 };
 
 let dirty = false;
-Config.channels.forEach(channel => {
-	if(!Config.tagSettings[channel]) {
+[Config.username, ...Config.channels].forEach(channel => {
+	if(!Config.tagSettings[channel.toLowerCase()]) {
 		// JSON.stringify/parse - deepcopy
-		Config.tagSettings[channel] = JSON.parse(JSON.stringify(Config.tagSettings['!default']));
+		Config.tagSettings[channel.toLowerCase()] = JSON.parse(JSON.stringify(Config.tagSettings['!default']));
 		dirty = true;
 	}
 });
+
 if(dirty)
-	Config.Save();
+	Config.save();
 
 const Client = new tmi.Client({
 	options: {
@@ -27,7 +28,7 @@ const Client = new tmi.Client({
 		username: Config.username.toLowerCase(),
 		password: Config.token
 	},
-	channels: [Config.username, ...Config.channels.map(channel => channel.toLowerCase())]
+	channels: [Config.username, ...Config.channels]
 });
 Client.connect();
 
@@ -97,8 +98,12 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 					return reply(`Tag called ${name} has been yeeted successfully.`);
 
 				case 'list':
-					return reply('TODO');
-					// TODO: only respond if on bot's channel
+					var channelFor = name || channel.slice(1);
+					// This is done to prevent spam if you have a large amount of tags.
+					if(isAdmin(tags.username) || Config.username.toLowerCase() === channel.slice(1))
+						return reply(`Global tags: ${Object.keys(Config.tagSettings['!globalTags']).join(', ')} || Channel tags: ${Object.keys(Config.tagSettings[channelFor].tags).join(', ')}`);
+
+					return reply(`To view the tag list, head over to #${Config.username} and type '${Config.tagSettings[Config.username.toLowerCase()].prefix}tag list ${channel.slice(1)}'`);
 
 				case 'info':
 					if(Config.tagSettings['!globalTags'][name])
@@ -113,7 +118,7 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 					name = name || args[0];
 
 					if(!name)
-						return reply(`${settings.prefix}tag <new|remove|list|info> <name> [...other arguments]`);
+						return reply(`Usage: ${settings.prefix}tag <new|remove|list|info> <name> [...other arguments]`);
 
 					if(Config.tagSettings['!globalTags'][name])
 						return reply(Config.tagSettings['!globalTags'][name]);
@@ -139,5 +144,7 @@ Client.on('message', async function onMessage(channel, tags, origMessage, self) 
 	}
 });
 
-// TODO: banning users from creating tags
-// Admin definition: can delete any tag of any user I guess?
+// TODO:
+// Add so (admins/channel?) can disable users from creating tags
+// Add so channel can add/remove admins
+// Admins/channel can ban users from creating tags (admins can't ban/remove/add other admins)
