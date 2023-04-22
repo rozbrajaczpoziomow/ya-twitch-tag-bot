@@ -13,6 +13,7 @@
 		"!default": {
 			"prefix": "&",
 			"admins": [],
+			"bans": [],
 			"tags": {}
 		}
 	}

@@ -19,7 +19,7 @@
 		"prefer-exponentiation-operator": ["error"],
 		"no-unneeded-ternary": ["error"],
 		"multiline-ternary": ["error", "never"],
-		"eol-last": ["error", "never"],
+		"eol-last": ["error", "always"],
 		"dot-location": ["error", "property"],
 		"space-before-blocks": ["error", "always"],
 		"array-bracket-spacing": ["error", "never"],

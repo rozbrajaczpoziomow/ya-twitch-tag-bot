@@ -41,9 +41,8 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 		return;
 
 	const reply = msg => Client.reply(channel, ' ' + msg, tags.id); // Space here to not parse twitch commands like /vip, etc..
-	// const message = origMessage.toLowerCase();
 	const settings = Config.tagSettings[channel.slice(1)];
-	const isAdmin = username => username === channel.slice(1) || settings.admins.includes(username); // when adding admins later make sure the added is in lowercase
+	const isAdmin = username => username === channel.slice(1) || settings.admins.includes(username);
 
 	if(message.toLowerCase().startsWith(`@${Config.username.toLowerCase()}`))
 		// copy from switch(cmd) > case 'prefix'
@@ -61,6 +60,9 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 			switch(args[0]?.toLowerCase()) {
 				case 'create':
 				case 'new':
+					if(settings.bans.includes(tags.username))
+						return reply('It looks like you\'re banned from creating tags... How sad.');
+
 					if(Config.tagSettings['!globalTags'][name])
 						return reply(`A global tag already exists with the name ${name}. (Global tags are set by the bot owner)`);
 
@@ -127,7 +129,7 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 				if(isAdmin(tags.username)) {
 					settings.prefix = args.slice(1).join(' ');
 					Config.save();
-					return reply(`Prefix successfully changed to ${settings.prefix}`);
+					return reply(`Prefix changed to ${settings.prefix}`);
 				} else
 					return reply('You don\'t have permission to change the prefix.');
 			return reply(`Current prefix: ${settings.prefix}` + (isAdmin(tags.username)? ` (change with '${settings.prefix}prefix set <new prefix>)'` : ''));
@@ -149,7 +151,7 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 				// TODO: I really should get better messages for these
 				if(settings.admins.includes(user))
-					settings.reply(`${user} already was an admin.`);
+					return reply(`${user} already was an admin.`);
 
 				settings.admins.push(user);
 				Config.save();
@@ -169,6 +171,43 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 				delete settings.admins[user];
 				Config.save();
 				return reply(`${user} is no longer an admin.`);
+			}
+
+			return reply(help);
+
+		case 'bans':
+			var help = `${settings.prefix}bans <ban/unban/list> <username>`;
+
+			if(!isAdmin(tags.username) || args[0] === 'list')
+				return reply(`Banned people [${settings.bans.length}]: ${settings.bans.join(', ')}`);
+
+			if(args[0] === 'ban') {
+				var user = args[1]?.toLowerCase();
+
+				if(!user)
+					return reply(help);
+
+				if(isAdmin(user))
+					return reply('You can\'t ban an admin.');
+
+				if(settings.bans.includes(user))
+					return reply(`${user} was already banned. You really must hate him.`);
+
+				settings.bans.push(user);
+				Config.save();
+				return reply(`${user} has been banned from creating tags.`);
+			} else if(args[0] === 'unban') {
+				var user = args[1]?.toLowerCase();
+
+				if(!user)
+					return reply(help);
+
+				if(!settings.bans.includes(user))
+					return reply(`${user} is not banned.`);
+
+				delete settings.bans[user];
+				Config.save();
+				return reply(`${user} has been unbanned. Have fun creating tags.`);
 			}
 
 			return reply(help);
