@@ -1,9 +1,9 @@
 {
-	"username": "tyrolkagdbot",
-	"token": "oauth:<...>",
+	"username": "the username of your bot",
+	"token": "oauth:...",
 
 	"channels": [
-		"<...>"
+		""
 	],
 
 	"tagSettings": {
