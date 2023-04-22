@@ -2,7 +2,7 @@
 `Why? Because why not.`  
 
 ## Commands  
-```  
+```bat  
 Command prefix is assumed to be ^  
 Spaces after the prefix but before the actual command will be trimmed off, e.g. `^`, `^ ` and `^  ` are all treated equally  
 Arguments: <required>; [optional]; ... - can be more than 1  
