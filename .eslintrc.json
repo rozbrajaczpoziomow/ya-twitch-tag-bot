@@ -27,6 +27,8 @@
 		"comma-dangle": ["error", "never"],
 		"brace-style": ["error", "1tbs", {"allowSingleLine": true}],
 		"func-call-spacing": ["error", "never"],
+		"keyword-spacing": ["error", {"after": false, "overrides": {"case": {"after": true}, "var": {"after": true}, "let": {"after": true}, "const": {"after": true}}}],
+		"default-case-last": ["error"],
 		"no-redeclare": ["off", "it's broken"]
 	}
 }
