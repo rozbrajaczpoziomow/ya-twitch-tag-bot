@@ -1,6 +1,11 @@
 const Config = require('./config.json');
 const tmi = require('tmi.js');
 const { writeFileSync } = require('node:fs');
+const configOptions = {
+	'globalLock': 'Prohibits normal users from creating/removing any custom tags',
+	'tagRequiresPrefix': 'Whether the bot should send a tag content\'s without a need for the prefix'
+};
+const configOptionNames = Object.keys(configOptions);
 
 Config.save = function saveConfig() {
 	process.stdout.write('[+] Saving config...\r');
@@ -13,8 +18,16 @@ let dirty = false;
 	if(!Config.tagSettings[channel.toLowerCase()]) {
 		// JSON.stringify/parse - deepcopy
 		Config.tagSettings[channel.toLowerCase()] = JSON.parse(JSON.stringify(Config.tagSettings['!default']));
+		console.log(`[*] New channel: ${channel}`);
 		dirty = true;
 	}
+	Object.keys(Config.tagSettings['!default']).forEach(property => {
+		if(Config.tagSettings[channel.toLowerCase()][property] == undefined) { // undefined to allow for falsy values
+			console.log(`- Channel ${channel} missing property \`${property}\` from the defaults - adding automatically.`);
+			Config.tagSettings[channel.toLowerCase()][property] = JSON.parse(JSON.stringify(Config.tagSettings['!default'][property]));
+			dirty = true;
+		}
+	});
 });
 
 if(dirty)
@@ -48,8 +61,12 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 		// copy from switch(cmd) > case 'prefix'
 		return reply(`Current prefix: ${settings.prefix}` + (isAdmin(tags.username)? ` (change with '${settings.prefix}prefix set <new prefix>)'` : ''));
 
-	if(!message.startsWith(settings.prefix))
+	if(!message.startsWith(settings.prefix)) {
+		if(!settings.config.tagRequiresPrefix)
+			if(settings.tags[name = message.trim().split(' ')[0]] || Config.tagSettings['!globalTags'][name])
+				return reply(settings.tags[name]?.content ?? Config.tagSettings['!globalTags'][name]);
 		return;
+	}
 
 	let [cmd, ...args] = message.slice(settings.prefix.length).trimStart().split(' ');
 	cmd = cmd.toLowerCase();
@@ -60,6 +77,9 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 			switch(args[0]?.toLowerCase()) {
 				case 'create':
 				case 'new':
+					if(settings.config.globalLock && !isAdmin(tags.username))
+						return reply('You cannot create tags as the globalLock config option is enabled.');
+
 					if(settings.bans.includes(tags.username))
 						return reply('It looks like you\'re banned from creating tags... How sad.');
 
@@ -79,6 +99,9 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 				case 'delete':
 				case 'remove':
+					if(settings.config.globalLock && !isAdmin(tags.username))
+						return reply('You cannot delete tags as the globalLock config option is enabled.');
+
 					if(Config.tagSettings['!globalTags'][name])
 						return reply(`Global tags can only be deleted by the bot owner by editing the configuration file.`);
 
@@ -212,20 +235,44 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 
 			return reply(help);
 
-		// other commands
+		case 'config':
+			var help = `${settings.prefix}config {info <opt>} or {<${configOptionNames.join('/')}> <y/n>}`;
+
+			var option = args[0]?.replaceAll('_', '')?.toLowerCase();
+
+			if(option == 'info') {
+				option = args[1]?.replaceAll('_', '')?.toLowerCase();
+				if(!option || !configOptionNames.map(opt => opt.toLowerCase()).includes(option))
+					return reply(help);
+
+				var realName = configOptionNames[configOptionNames.map(opt => opt.toLowerCase()).indexOf(option)];
+
+				return reply(`${realName} - ${configOptions[realName]} {currently ${settings.config[realName]? 'enabled' : 'disabled'}}`);
+			}
+
+			if(!option || !configOptionNames.map(opt => opt.toLowerCase()).includes(option))
+				return reply(help);
+
+			if(!isAdmin(tags.username))
+				return reply('Sadly it looks like you do not have enough permissions to change the config options');
+
+			var realName = configOptionNames[configOptionNames.map(opt => opt.toLowerCase()).indexOf(option)];
+
+			var truthy = ['y', 'yes', 'yee', 'true', 'enable', 'enabled'];
+			var falsy = ['n', 'no', 'naw', 'false', 'disable', 'disabled'];
+
+			var value = args[1]?.toLowerCase();
+			if(!value || !(truthy.includes(value) || falsy.includes(value)))
+				return reply(help);
+
+			value = truthy.includes(value);
+			settings.config[realName] = value;
+			Config.save();
+			return reply(`Config option ${realName} has been ${value? 'enabled' : 'disabled'}`);
+
 		default:
-			// There is no message if the tag doesn't exist to allow people to set the prefix to nothing.
 			var name = message.slice(settings.prefix.length).trimStart().split(' ')[0];
-			var content = Config.tagSettings['!globalTags'][name] ?? settings.tags[name]?.content;
 
-			if(content)
-				return reply(content);
-
-			break;
+			return reply(Config.tagSettings['!globalTags'][name] ?? settings.tags[name]?.content ?? `No such tag exists, you can create one with ${settings.prefix}tag new ${name} <contents...>`);
 	}
 });
-
-// TODO:
-// Add so (admins/channel?) can disable users from creating tags
-// Admins/channel can ban users from creating tags (admins can't ban/remove/add other admins)
-// Add a tagRequiresPrefix config property - self-explanatory - if on the default case in global switch(cmd) shall reply if no tag is found

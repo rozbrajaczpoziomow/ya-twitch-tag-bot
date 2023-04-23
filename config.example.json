@@ -14,6 +14,9 @@
 			"prefix": "&",
 			"admins": [],
 			"bans": [],
+			"config": {
+				"tagRequiresPrefix": true
+			},
 			"tags": {}
 		}
 	}

@@ -29,7 +29,7 @@ Any message that starts with @<bot name>
 ^prefix  
 	- sends you the prefix that you just used to send this command  
 ^prefix set [prefix...]  
-	- if admin - sets the prefix to whatever you specify (can be empty)  
+	- if admin - sets the prefix to whatever you specify (can be empty - probably not a great idea though)  
 	- otherwise - too bad  
 
 ^admin add <username>  
@@ -50,14 +50,23 @@ Any message that starts with @<bot name>
 ^bans list  
 	- lists the banned users... what did you expect?  
 
+^config info <option>  
+	- sends a short description about the mentioned config option  
+^config <option> <y/n>  
+	- if admin - sets the specified config option to the specified value  
+	- otherwise - too bad  
+Currently implemented config options: `globalLock, tagRequiresPrefix`  
+
 ^<tag>  
 	- if tag exists - sends the contents  
-	- otherwise - does nothing  
+	- otherwise - sends a generic message  
 ```  
 
 ## Installation  
 Install NodeJS.  
 Run `npm i .` to install the required packages.  
+Change/modify the config to your liking.  
+And start the bot with `nodejs index.js`.  
 
 ## Configuration  
 A basic config/example can be found @ config.example.json.  
