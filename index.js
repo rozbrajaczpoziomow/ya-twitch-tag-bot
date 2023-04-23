@@ -191,7 +191,7 @@ Client.on('message', async function onMessage(channel, tags, message, self) {
 				if(!settings.admins.includes(user))
 					return reply(`${user} is not an admin.`);
 
-				delete settings.admins[user];
+				settings.admins = settings.admins.filter(admin => admin != user);
 				Config.save();
 				return reply(`${user} is no longer an admin.`);
 			}
